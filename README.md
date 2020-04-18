@@ -94,7 +94,7 @@ Quite unsurprisingly, there exists an officially supported [image](https://hub.d
 ```
 $ docker run -d -p 9200:9200 -p 9300:9300 \
      -e "discovery.type=single-node" \
-     docker.elastic.co/elasticsearch/elasticsearch:7.6.2
+     docker.elastic.co/elasticsearch/elasticsearch:7.6.0
 ...
 224a97d6bc54829f8be84b48d230f06ff316d07da150c1a4df4e74baeceeb5a3
 $
@@ -108,7 +108,7 @@ $ curl 0.0.0.0:9200
   "cluster_name" : "docker-cluster",
   "cluster_uuid" : "uy1aMPBSQqq5KDIXZvH-4w",
   "version" : {
-    "number" : "7.6.2",
+    "number" : "7.6.0",
     "build_flavor" : "default",
     "build_type" : "docker",
     "build_hash" : "ef48eb35cf30adf4db14086e8aabd07ef6fb113f",
@@ -159,7 +159,7 @@ We then use the `ADD` command to copy our application into a new volume in the c
 
 Finally, we can go ahead, build the image and run the container (replace `adaptiman` with your username below).
 ```
-$ cd ~/Lab9/FoodTrucks
+$ cd ~/Lab10/
 $ docker build -t adaptiman/foodtrucks-web .
 ```
 In the first run, this will take some time as the Docker client will download the ubuntu image, run all the commands and prepare your image. Re-running `docker build` after any subsequent changes you make to the application code will almost be instantaneous. Now let's try running our app.
@@ -259,7 +259,7 @@ root@ef6a158f1441:/opt/flask-app# curl 172.17.0.2:9200
   "cluster_name" : "docker-cluster",
   "cluster_uuid" : "uy1aMPBSQqq5KDIXZvH-4w",
   "version" : {
-    "number" : "7.6.2",
+    "number" : "7.6.0",
     "build_flavor" : "default",
     "build_type" : "docker",
     "build_hash" : "ef48eb35cf30adf4db14086e8aabd07ef6fb113f",
@@ -302,7 +302,7 @@ Now that we have a network, we can launch our containers inside this network usi
 ```
 $ docker ps -a
 CONTAINER ID        IMAGE                                                 COMMAND                  CREATED             STATUS                       PORTS               NAMES
-cb02281299a9        docker.elastic.co/elasticsearch/elasticsearch:7.6.2   "/usr/local/bin/dock…"   4 minutes ago       Exited (143) 2 minutes ago                       es
+cb02281299a9        docker.elastic.co/elasticsearch/elasticsearch:7.6.0   "/usr/local/bin/dock…"   4 minutes ago       Exited (143) 2 minutes ago                       es
 
 $ docker rm cb02281299a9
 cb02281299a9
@@ -310,7 +310,7 @@ cb02281299a9
 $ docker run -d -p 9200:9200 \
 	-e "discovery.type=single-node" \
 	--net foodtrucks --name es 
-	docker.elastic.co/elasticsearch/elasticsearch:7.6.2
+	docker.elastic.co/elasticsearch/elasticsearch:7.6.0
 6479218d11a99208ae827ea4950c90142c39f60a88f4dfc272cb17f487f86279
 
 $ docker network inspect foodtrucks
@@ -372,7 +372,7 @@ root@e51409dad298:/opt/flask-app# curl es:9200
   "cluster_name" : "docker-cluster",
   "cluster_uuid" : "oCm8VGcKTK6566QlNBIRIQ",
   "version" : {
-    "number" : "7.6.2",
+    "number" : "7.6.0",
     "build_flavor" : "default",
     "build_type" : "docker",
     "build_hash" : "ef48eb35cf30adf4db14086e8aabd07ef6fb113f",
@@ -402,7 +402,7 @@ $ docker run -d --net foodtrucks -p 5000:5000 --name foodtrucks-web adaptiman/fo
 $ docker ps
 CONTAINER ID        IMAGE                                                 COMMAND                  CREATED             STATUS              PORTS                              NAMES
 7b961568b270        adaptiman/foodtrucks-web                              "python ./app.py"        9 seconds ago       Up 8 seconds        0.0.0.0:5000->5000/tcp             foodtrucks-web
-6479218d11a9        docker.elastic.co/elasticsearch/elasticsearch:7.6.2   "/usr/local/bin/dock…"   17 minutes ago      Up 17 minutes       0.0.0.0:9200->9200/tcp, 9300/tcp   es
+6479218d11a9        docker.elastic.co/elasticsearch/elasticsearch:7.6.0   "/usr/local/bin/dock…"   17 minutes ago      Up 17 minutes       0.0.0.0:9200->9200/tcp, 9300/tcp   es
 
 $ curl -I 0.0.0.0:5000
 HTTP/1.0 200 OK
