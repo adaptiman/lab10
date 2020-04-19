@@ -37,6 +37,11 @@ This lab is built upon the Virtual Machine (VM) you built in [Lab9](https://gith
 - [Azure Web Services](http://azure.microsoft.com/en-us/)
 - [Docker Hub](https://hub.docker.com/)
 
+To prepare for the lab, SSH into your VM from lab 9, and clone Lab10 in your home directory:
+```
+$ git clone https://github.com/adaptiman/lab10.git
+```
+
 <a href="#table-of-contents" class="top" id="preface">Top</a>
 <a id="multi-container"></a>
 ## 4.0 Multi-container Environments
@@ -92,15 +97,15 @@ $
 ```
 Quite unsurprisingly, there exists an officially supported [image](https://hub.docker.com/_/elasticsearch/) for Elasticsearch. To get ES running, we can simply use `docker run` and have a single-node ES container running locally within no time. Note that currently, there are issues with the Docker elasticsearch image, and so we'll use the published image from the creator (referencing the current version):
 ```
-$ docker run -d -p 9200:9200 -p 9300:9300 \
-     -e "discovery.type=single-node" \
-     docker.elastic.co/elasticsearch/elasticsearch:7.6.0
+$ docker run -d --name es --net foodtrucks-net \
+    -p 9200:9200 -p 9300:9300 \
+    -e "discovery.type=single-node" \ 
+    docker.elastic.co/elasticsearch/elasticsearch:6.3.2
 ...
 224a97d6bc54829f8be84b48d230f06ff316d07da150c1a4df4e74baeceeb5a3
 $
 ```
 Test the container:
-
 ```
 $ curl 0.0.0.0:9200
 {
@@ -155,7 +160,7 @@ CMD [ "python", "./app.py" ]
 ```
 Quite a few new things here so let's quickly go over this file. We start off with the [Ubuntu LTS](https://wiki.ubuntu.com/LTS) base image and use the package manager `apt` to install the dependencies namely - Python and Node. The `yqq` flag is used to suppress output and assumes "Yes" to all prompt. We also create a symbolic link for the node binary to deal with backward compatibility issues.
 
-We then use the `ADD` command to copy our application into a new volume in the container - `/opt/flask-app`. This is where our code will reside. We also set this as our working directory, so that the following commands will be run in the context of this location. Now that our system-wide dependencies are installed, we get around to install app-specific ones. First off we tackle Node by installing the packages from npm and running the build command as defined in our `package.json` [file](https://github.com/prakhar1989/FoodTrucks/blob/master/flask-app/package.json#L7-L9). We finish the file off by installing the Python packages, exposing the port and defining the `CMD` to run as we did in the last section.
+We then use the `ADD` command to copy our application into a new volume in the container - `/opt/flask-app`. This is where our code will reside. We also set this as our working directory, so that the following commands will be run in the context of this location. Now that our system-wide dependencies are installed, we get around to install app-specific ones. First off we tackle Node by installing the packages from npm and running the build command as defined in our `package.json` [file](flask-app/package.json#L7-L9). We finish the file off by installing the Python packages, exposing the port and defining the `CMD` to run as we did in the last section.
 
 Finally, we can go ahead, build the image and run the container (replace `adaptiman` with your username below).
 ```
@@ -182,7 +187,7 @@ $ docker ps
 CONTAINER ID        IMAGE               COMMAND                  CREATED             STATUS              PORTS                              NAMES
 e931ab24dedc        elasticsearch       "/docker-entrypoint.s"   2 seconds ago       Up 2 seconds        0.0.0.0:9200->9200/tcp, 9300/tcp   cocky_spence
 ```
-So we have one ES container running on `0.0.0.0:9200` port which we can directly access. If we can tell our Flask app to connect to this URL, it should be able to connect and talk to ES, right? Let's dig into our [Python code](https://github.com/prakhar1989/FoodTrucks/blob/master/flask-app/app.py#L7) and see how the connection details are defined.
+So we have one ES container running on `0.0.0.0:9200` port which we can directly access. If we can tell our Flask app to connect to this URL, it should be able to connect and talk to ES, right? Let's dig into our [Python code](flask-app/app.py#L7) and see how the connection details are defined.
 ```
 es = Elasticsearch(host='es')
 ```
@@ -479,14 +484,14 @@ CPython version: 2.7.9
 OpenSSL version: OpenSSL 1.0.1j 15 Oct 2014
 ```
 
-Now that we have it installed, we can jump on the next step i.e. the Docker Compose file `docker-compose.yml`. The syntax for the `yml` is quite simple and the repo already contains the docker-compose [file](https://github.com/prakhar1989/FoodTrucks/blob/master/docker-compose.yml) that we'll be using.
+Now that we have it installed, we can jump on the next step i.e. the Docker Compose file `docker-compose.yml`. The syntax for the `yml` is quite simple and the repo already contains the docker-compose [file](docker-compose.yml) that we'll be using.
 ```
 version: "2"
 services:
   es:
     image: elasticsearch
   web:
-    image: prakhar1989/foodtrucks-web
+    image: adaptiman/foodtrucks-web
     command: python app.py
     ports:
       - "5000:5000"
@@ -584,7 +589,7 @@ Recreating foodtrucks_es_1
 Recreating foodtrucks_web_1
 $ docker ps
 CONTAINER ID        IMAGE                        COMMAND                  CREATED             STATUS              PORTS                    NAMES
-f50bb33a3242        prakhar1989/foodtrucks-web   "python app.py"          14 seconds ago      Up 13 seconds       0.0.0.0:5000->5000/tcp   foodtrucks_web_1
+f50bb33a3242        adaptiman/foodtrucks-web   "python app.py"          14 seconds ago      Up 13 seconds       0.0.0.0:5000->5000/tcp   foodtrucks_web_1
 e299ceeb4caa        elasticsearch                "/docker-entrypoint.s"   14 seconds ago      Up 14 seconds       9200/tcp, 9300/tcp       foodtrucks_es_1
 ```
 So far, so good. Time to see if any networks were created.
@@ -602,7 +607,7 @@ You can see that compose went ahead and created a new network called `foodtrucks
 ```
 $ docker ps
 CONTAINER ID        IMAGE                        COMMAND                  CREATED             STATUS              PORTS                    NAMES
-bb72dcebd379        prakhar1989/foodtrucks-web   "python app.py"          20 hours ago        Up 19 hours         0.0.0.0:5000->5000/tcp   foodtrucks_web_1
+bb72dcebd379        adaptiman/foodtrucks-web   "python app.py"          20 hours ago        Up 19 hours         0.0.0.0:5000->5000/tcp   foodtrucks_web_1
 3338fc79be4b        elasticsearch                "/docker-entrypoint.s"   20 hours ago        Up 19 hours         9200/tcp, 9300/tcp       foodtrucks_es_1
 
 $ docker exec -it bb72dcebd379 bash
@@ -674,14 +679,14 @@ INFO[0242] Cloudformation stack status                   stackStatus=CREATE_IN_P
 ```
 Here we provide the name of the keypair we downloaded initially (`ecs` in my case), the number of instances that we want to use (`--size`) and the type of instances that we want the containers to run on. The `--capability-iam` flag tells the CLI that we acknowledge that this command may create IAM resources.
 
-The last and final step is where we'll use our `docker-compose.yml` file. We'll need to make a tiny change, so instead of modifying the original, let's make a copy of it and call it `aws-compose.yml`. The contents of [this file](https://github.com/prakhar1989/FoodTrucks/blob/master/aws-compose.yml) (after making the changes) look like (below) -
+The last and final step is where we'll use our `docker-compose.yml` file. We'll need to make a tiny change, so instead of modifying the original, let's make a copy of it and call it `aws-compose.yml`. The contents of [this file](aws-compose.yml) (after making the changes) look like (below) -
 ```
 es:
   image: elasticsearch
   cpu_shares: 100
   mem_limit: 262144000
 web:
-  image: prakhar1989/foodtrucks-web
+  image: adaptiman/foodtrucks-web
   cpu_shares: 100
   mem_limit: 262144000
   ports:
@@ -692,7 +697,7 @@ web:
 The only changes we made from the original `docker-compose.yml` are of providing the `mem_limit` and `cpu_shares` values for each container. We also got rid of the `version` and the `services` key, since AWS doesn't yet support [version 2](https://docs.docker.com/compose/compose-file/#version-2) of Compose file format. Since our apps will run on `t2.micro` instances, we allocate 250mb of memory. Another thing we need to do before we move onto the next step is to publish our image on Docker Hub. As of this writing, ecs-cli **does not** support the `build` command - which is [supported](https://docs.docker.com/compose/compose-file/#build) perfectly by Docker Compose.
 
 ```
-$ docker push prakhar1989/foodtrucks-web
+$ docker push adaptiman/foodtrucks-web
 ```
 
 Great! Now let's run the final command that will deploy our app on ECS!
@@ -758,7 +763,7 @@ Off you go, young padawan!
 ### 4.2 Give Feedback
 Now that the tutorial is over, it's my turn to ask questions. How did you like the tutorial? Did you find the tutorial to be a complete mess or did you have fun and learn something?
 
-Send in your thoughts directly to [me](mailto:prakhar@prakhar.me) or just [create an issue](https://github.com/prakhar1989/docker-curriculum/issues/new). I'm on [Twitter](https://twitter.com/prakharsriv9), too, so if that's your deal, feel free to holler there!
+Send in your thoughts directly to [me](mailto:adaptiman@tamu.edu) or just [create an issue](https://github.com/adaptiman/lab10/issues/new). 
 
 I would totally love to hear about your experience with this tutorial. Give suggestions on how to make this better or let me know about my mistakes. I want this tutorial to be one of the best introductory tutorials on the web and I can't do it without your help.
 
