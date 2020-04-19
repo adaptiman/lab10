@@ -1,8 +1,6 @@
 # start from base
 FROM ubuntu:latest
 
-LABEL maintainer="Prakhar Srivastav <prakhar@prakhar.me>"
-
 # install system-wide deps for python and node
 RUN apt-get -yqq update
 RUN apt-get -yqq install python-pip python-dev curl gnupg
@@ -17,6 +15,9 @@ WORKDIR /opt/flask-app
 RUN npm install
 RUN npm run build
 RUN pip install -r requirements.txt
+
+# fix vulnerability reported in build
+# RUN npm install --save-dev webpack@4.42.1
 
 # expose port
 EXPOSE 5000
