@@ -1,11 +1,13 @@
 # start from base
 FROM ubuntu:latest
 
+LABEL maintainer="Prakhar Srivastav <prakhar@prakhar.me>"
+
 # install system-wide deps for python and node
-RUN apt -yqq update
-RUN apt -yqq install python-pip python-dev curl gnupg
+RUN apt-get -yqq update
+RUN apt-get -yqq install python-pip python-dev curl gnupg
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash
-RUN apt install -yq nodejs
+RUN apt-get install -yq nodejs
 
 # copy our application code
 ADD flask-app /opt/flask-app
