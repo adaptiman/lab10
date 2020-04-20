@@ -21,7 +21,9 @@ This document contains several sections, each of which explains a particular asp
     - [4.2.1 Patching a Container](#patching)
     - [4.2.2 Docker Links](#docker-links)
   - [4.3 Docker Compose](#docker-compose)
-  - [4.4 Azure Kubernetes Service](#azure-AKS)
+  - [4.4 Azure Web App Service](#azure-webapp)
+    - [4.4.1 Installing Azure CLI](#azcli)
+    - [4.4.2 Deploying to Azure App Service](#azureas)
 - [5.0 Submitting the Lab](#submitlab)
 - [References](#references)
 
@@ -32,6 +34,7 @@ This document contains several sections, each of which explains a particular asp
 
 > Note: This tutorial uses version **1.40** of Docker Community Edition. If you find any part of the tutorial incompatible with a future version, please raise an [issue](https://github.com/adaptiman/lab10/issues). Thanks!
 
+<a href="#table-of-contents" class="top" id="preface">Top</a>
 <a id="prerequisites"></a>
 ### Prerequisites
 This lab is built upon the Virtual Machine (VM) you built in [Lab9](https://github.com/adaptiman/lab9). This VM consisted of an Ubuntu 18.04LTS image patched and deployed in Azure, with Docker CE installed. If you do not have access to this development environment, STOP and complete [Lab9](https://github.com/adaptiman/lab9). This lab also assumes that you have accounts on each of these websites:
@@ -55,6 +58,7 @@ In particular, we are going to see how we can run and manage **multi-container**
 
 Just like it's a good strategy to decouple your application tiers, it is wise to keep containers for each of the **services** separate. Each tier is likely to have different resource needs and those needs might grow at different rates. By separating the tiers into different containers, we can compose each tier using the most appropriate instance type based on different resource needs. This also plays in very well with the whole [microservices](http://martinfowler.com/articles/microservices.html) movement which is one of the main reasons why Docker (or any other container technology) is at the [forefront](https://medium.com/aws-activate-startup-blog/using-containers-to-build-a-microservices-architecture-6e1b8bacb7d1#.xl3wryr5z) of modern microservices architectures.
 
+<a href="#table-of-contents" class="top" id="preface">Top</a>
 <a id="foodtrucks"></a>
 ### 4.1 SF Food Trucks
 
@@ -214,6 +218,7 @@ Out of retries. Bailing out...
 ```
 Oops! Our flask app was unable to run since it was unable to connect to Elasticsearch. How do we tell one container about the other container and get them to talk to each other? The answer lies in the next section.
 
+<a href="#table-of-contents" class="top" id="preface">Top</a>
 <a id="docker-network"></a>
 ### 4.2 Docker Network
 Before we talk about the features Docker provides especially to deal with such scenarios, let's see if we can figure out a way to get around the problem. Hopefully this should give you an appreciation for the specific feature that we are going to study.
@@ -628,6 +633,7 @@ $
 
 Before we leave this section though, I should mention that `docker network` is a relatively new feature - it was part of Docker 1.9 [release](https://blog.docker.com/2015/11/docker-1-9-production-ready-swarm-multi-host-networking/). Before `network` came along, links were the accepted way of getting containers to talk to each other. According to the official [docs](https://docs.docker.com/engine/userguide/networking/default_network/dockerlinks/), linking is expected to be deprecated in future releases. In case you stumble across tutorials or blog posts that use `link` to bridge containers, remember to use `network` instead.
 
+<a href="#table-of-contents" class="top" id="preface">Top</a>
 <a id="docker-compose"></a>
 ### 4.3 Docker Compose
 
@@ -861,26 +867,312 @@ Voila! That works. So somehow, this container is magically able to ping `es` hos
 
 That concludes our tour of Docker Compose. With Docker Compose, you can also pause your services, run a one-off command on a container and even scale the number of containers. I also recommend you checkout a few other [use-cases](https://docs.docker.com/compose/overview/#common-use-cases) of Docker compose. Hopefully I was able to show you how easy it is to manage multi-container environments with Compose. In the final section, we are going to deploy our app to AWS!
 
-<a id="azure-AKS"></a>
-### 4.4 Azure Kubernetes Service
-In the last section we used `docker-compose` to run our app locally with a single command: `docker-compose up`. Now that we have a functioning app we want to share this with the world, get some users, make tons of money and buy a big house in Miami. Executing the last three are beyond the scope of tutorial, so we'll spend our time instead on figuring out how we can deploy our multi-container apps on the cloud with AWS.
+<a href="#table-of-contents" class="top" id="preface">Top</a>
+<a id="azure-webapp"></a>
+### 4.4 Azure Web App Service
+In the last section we used `docker-compose` to run our app locally with a single command: `docker-compose up`. Now that we have a functioning app we want to share this with the world, get some users, make tons of money and buy a big house in Miami. Executing the last three are beyond the scope of tutorial, so we'll spend our time instead on figuring out how we can deploy our multi-container apps on the cloud with Azure.
 
+If you've read this far you are much pretty convinced that Docker is a pretty cool technology. And you are not alone. Seeing the meteoric rise of Docker, almost all Cloud vendors started working on adding support for deploying Docker apps on their platform. As of today, you can deploy Docker apps on AWS, [Azure](https://docs.microsoft.com/en-us/azure/app-service/containers/quickstart-multi-container), [Rackspace](http://blog.rackspace.com/docker-with-the-rackspace-open-cloud/), [DigitalOcean](https://marketplace.digitalocean.com/apps/docker) and many others. We already got a primer on deploying single container app with Azure App Service in Lab9. In this section we are going to look at [Azure Web App for Containers](https://docs.microsoft.com/en-us/azure/app-service/containers/tutorial-multi-container-app)..
 
-If you've read this far you are much pretty convinced that Docker is a pretty cool technology. And you are not alone. Seeing the meteoric rise of Docker, almost all Cloud vendors started working on adding support for deploying Docker apps on their platform. As of today, you can deploy Docker apps on AWS, [Azure](https://azure.microsoft.com/en-us/documentation/articles/virtual-machines-docker-vm-extension/), [Rackspace](http://blog.rackspace.com/docker-with-the-rackspace-open-cloud/), [DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-docker-application) and many others. We already got a primer on deploying single container apps with Elastic Beanstalk and in this section we are going to look at [Elastic Container Service (or ECS)](https://aws.amazon.com/ecs/) by AWS.
+Azure Web App is a scalable and super flexible container management service that supports Docker containers. It allows you to operate a Docker cluster either through the Azure portal GUI or via the Azure CLI.
 
-AWS ECS is a scalable and super flexible container management service that supports Docker containers. It allows you to operate a Docker cluster on top of EC2 instances via an easy-to-use API. Where Beanstalk came with reasonable defaults, ECS allows you to completely tune your environment as per your needs. This makes ECS, in my opinion, quite complex to get started with.
+<a href="#table-of-contents" class="top" id="preface">Top</a>
+<a id="azcli"></a>
+#### 4.4.1 Installing the Azure CLI
 
-Luckily for us, ECS has a friendly [CLI](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI.html) tool that understands Docker Compose files and automatically provisions the cluster on ECS! Since we already have a functioning `docker-compose.yml` it should not take a lot of effort in getting up and running on AWS. So let's get started!
+Luckily for us, Azure has a friendly [CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest) tool that can be installed using apt, understands Docker Compose files, and automatically provisions the cluster on Azure Web App. Since we already have a functioning `docker-compose.yml` it should not take a lot of effort in getting up and running on Azure. So let's get started!
 
-The first step is to install the CLI. As of this writing, the CLI is not supported on Windows. Instructions to install the CLI on both Mac and Linux are explained very clearly in the [official docs](http://docs.aws.amazon.com/AmazonECS/latest/developerguide/ECS_CLI_installation.html). Go ahead, install the CLI and when you are done, verify the install by running
-
+The first step is to install the CLI.  Instructions to install the CLI are explained very clearly in the [official doc](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest). But for Ubuntu, the Azure CLI can be installed with one command:
 ```
-$ ecs-cli --version
-ecs-cli version 0.1.0 (*cbdc2d5)
+$ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
-The first step is to get a keypair which we'll be using to log into the instances. Head over to your [EC2 Console](https://console.aws.amazon.com/ec2/v2/home?region=us-east-1#KeyPairs:sort=keyName) and create a new keypair. Download the keypair and store it in a safe location. Another thing to note before you move away from this screen is the region name. In my case, I have named my key - `ecs` and set my region as `us-east-1`. This is what I'll assume for the rest of this walkthrough.
+After installing the CLI, verify your version:
+```
+$ az --version
+azure-cli                          2.3.1
+command-modules-nspkg              2.0.3
+core                               2.3.1
+nspkg                              3.0.4
+telemetry                          1.0.4
+...
+Your CLI is up-to-date.
+Please let us know how we are doing: https://aka.ms/clihats
 
-<img src="images/keypair.png" alt="keypair.png" />
+$
+```
+There are multiple ways for the CLI to authenticate to Azure. For longterm security, using the [service principle mechanism](https://docs.microsoft.com/en-us/cli/azure/create-an-azure-service-principal-azure-cli#sign-in-using-a-service-principal) is the best way. However, for our purposes, we are going to use a simplified method of authentication using a device login key.
+
+The first step is to start the login procedure from the command line:
+```
+$ az login
+To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code XXXYYY1234 to authenticate.
+```
+Of course, your code won't be XXXYYY1234. On your computer, open a browser and point it to [https://microsoft.com/devicelogin](https://microsoft.com/devicelogin). You'll be prompted with the following screen:
+
+<img src="images/login1.jpg" alt="Screen where you enter the code displayed from the azure cli login command." />
+
+Once you enter your code, you'll be presented with a dialog to select the microsoft account you want to use to login:
+
+<img src="images/login2.jpg" alt="Screen where you select your Microsoft account." />
+
+Once you select the account, you'll receive a confirmation screen:
+
+<img src="images/login3.jpg" alt="Confirmation screen showing your VM is logged on to Azure." />
+
+Moving back to your VM's SSH session, you'll see confirmation that you are logged on:
+```java
+$ az login
+To sign in, use a web browser to open the page https://microsoft.com/devicelogin and enter the code XXXYYY1234 to authenticate.
+[
+  {
+    "cloudName": "AzureCloud",
+    "homeTenantId": "735197fc-bf78-49bd-8e94-ebd21907f154",
+    "id": "7d21413a-1657-4c27-9362-XXXXXXXXXXXX",
+    "isDefault": true,
+    "managedByTenants": [],
+    "name": "Microsoft Azure Sponsorship 2",
+    "state": "Enabled",
+    "tenantId": "735197fc-bf78-49bd-8e94-ebd21907f154",
+    "user": {
+      "name": "adaptiman@outlook.com",
+      "type": "user"
+    }
+  },
+  {
+    "cloudName": "AzureCloud",
+    "homeTenantId": "735197fc-bf78-49bd-8e94-ebd21907f154",
+    "id": "96434d4a-5c3b-4cc2-be1f-XXXXXXXXXXXX",
+    "isDefault": false,
+    "managedByTenants": [],
+    "name": "Lab 8 - Containerization David Sweeney",
+    "state": "Disabled",
+    "tenantId": "735197fc-bf78-49bd-8e94-ebd21907f154",
+    "user": {
+      "name": "adaptiman@outlook.com",
+      "type": "user"
+    }
+  }
+]
+
+$
+```
+Your VM is now logged on to Azure.
+
+<a href="#table-of-contents" class="top" id="preface">Top</a>
+<a id="azureas"></a>
+#### 4.4.2 Deploying the Azure App Service
+
+The first step to deploying your app is to create a resource group. This is the "box" that all of your resources for this application will reside in. Creating a resource group is quite simple::
+```
+$ az group create --name foodtrucksRG --location "South Central US"
+```
+The command will return a JSON payload with the result:
+```JSON
+{
+  "id": "/subscriptions/7d21413a-1657-4c27-9362-XXXXXXXXXXXX/resourceGroups/foodtrucksRG",
+  "location": "southcentralus",
+  "managedBy": null,
+  "name": "foodtrucksRG",
+  "properties": {
+    "provisioningState": "Succeeded"
+  },
+  "tags": null,
+  "type": "Microsoft.Resources/resourceGroups"
+}
+```
+Next, you'll creat an Azure app service plan to hold the containers. The service plan is named foodtrucksServicePlan in the Standard pricing tier (--sku S1) and in a Linux container (--is-linux). Again, this is a quite simple:
+```
+$ az appservice plan create --name foodtrucksServicePlan \
+    --resource-group foodtrucksRG --sku P1v2 --is-linux
+```
+When the App Service plan has been created, you'll see a JSON result similar to the following:
+```JSON
+{- Finished ..
+  "freeOfferExpirationTime": null,
+  "geoRegion": "South Central US",
+  "hostingEnvironmentProfile": null,
+  "hyperV": false,
+  "id": "/subscriptions/7d21413a-1657-4c27-9362-XXXXXXXXXXXX/resourceGroups/foodtrucksRG/providers/Microsoft.Web/serverfarms/foodtrucksServicePlan",
+  "isSpot": false,
+  "isXenon": false,
+  "kind": "linux",
+  "location": "South Central US",
+  "maximumElasticWorkerCount": 1,
+  "maximumNumberOfWorkers": 30,
+  "name": "foodtrucksServicePlan",
+  "numberOfSites": 0,
+  "perSiteScaling": false,
+  "provisioningState": "Succeeded",
+  "reserved": true,
+  "resourceGroup": "foodtrucksRG",
+  "sku": {
+    "capabilities": null,
+    "capacity": 1,
+    "family": "Pv2",
+    "locations": null,
+    "name": "P1v2",
+    "size": "P1v2",
+    "skuCapacity": null,
+    "tier": "PremiumV2"
+  },
+  "spotExpirationTime": null,
+  "status": "Ready",
+  "subscription": "7d21413a-1657-4c27-9362-XXXXXXXXXXXX",
+  "tags": null,
+  "targetWorkerCount": 0,
+  "targetWorkerSizeId": 0,
+  "type": "Microsoft.Web/serverfarms",
+  "workerTierName": null
+}
+```
+Finally, you'll deploy your application using the docker-compose .yml file with a single command:
+```
+az webapp create --resource-group foodtrucksRG --plan \
+    foodtrucksServicePlan --name adaptiman-sfft \
+    --multicontainer-config-type compose \
+    --multicontainer-config-file docker-compose.yml
+```
+When the app has been deployed, you'll see a JSON result similar to the following. Note the default host name:
+```JSON
+{- Finished ..
+  "availabilityState": "Normal",
+  "clientAffinityEnabled": true,
+  "clientCertEnabled": false,
+  "clientCertExclusionPaths": null,
+  "cloningInfo": null,
+  "containerSize": 0,
+  "dailyMemoryTimeQuota": 0,
+  "defaultHostName": "adaptiman-sfft.azurewebsites.net",
+  "enabled": true,
+  "enabledHostNames": [
+    "adaptiman-sfft.azurewebsites.net",
+    "adaptiman-sfft.scm.azurewebsites.net"
+  ],
+  "ftpPublishingUrl": "ftp://waws-prod-sn1-163.ftp.azurewebsites.windows.net/site/wwwroot",
+  "hostNameSslStates": [
+    {
+      "hostType": "Standard",
+      "ipBasedSslResult": null,
+      "ipBasedSslState": "NotConfigured",
+      "name": "adaptiman-sfft.azurewebsites.net",
+      "sslState": "Disabled",
+      "thumbprint": null,
+      "toUpdate": null,
+      "toUpdateIpBasedSsl": null,
+      "virtualIp": null
+    },
+    {
+      "hostType": "Repository",
+      "ipBasedSslResult": null,
+      "ipBasedSslState": "NotConfigured",
+      "name": "adaptiman-sfft.scm.azurewebsites.net",
+      "sslState": "Disabled",
+      "thumbprint": null,
+      "toUpdate": null,
+      "toUpdateIpBasedSsl": null,
+      "virtualIp": null
+    }
+  ],
+  "hostNames": [
+    "adaptiman-sfft.azurewebsites.net"
+  ],
+  "hostNamesDisabled": false,
+  "hostingEnvironmentProfile": null,
+  "httpsOnly": false,
+  "hyperV": false,
+  "id": "/subscriptions/7d21413a-1657-4c27-9362-XXXXXXXXXXXX/resourceGroups/foodtrucksRG/providers/Microsoft.Web/sites/adaptiman-sfft",
+  "identity": null,
+  "inProgressOperationId": null,
+  "isDefaultContainer": null,
+  "isXenon": false,
+  "kind": "app,linux,container",
+  "lastModifiedTimeUtc": "2020-04-20T02:41:39.333333",
+  "location": "South Central US",
+  "maxNumberOfWorkers": null,
+  "name": "adaptiman-sfft",
+  "outboundIpAddresses": "157.55.186.146,70.37.67.76,40.84.157.22,70.37.64.204,23.98.152.90",
+  "possibleOutboundIpAddresses": "104.214.20.0,40.84.191.99,70.37.109.240,65.52.33.54,104.215.93.184,157.55.186.146,70.37.67.76,40.84.157.22,70.37.64.204,23.98.152.90",
+  "redundancyMode": "None",
+  "repositorySiteName": "adaptiman-sfft",
+  "reserved": true,
+  "resourceGroup": "foodtrucksRG",
+  "scmSiteAlsoStopped": false,
+  "serverFarmId": "/subscriptions/7d21413a-1657-4c27-9362-XXXXXXXXXXXX/resourceGroups/foodtrucksRG/providers/Microsoft.Web/serverfarms/foodtrucksServicePlan",
+  "siteConfig": null,
+  "slotSwapStatus": null,
+  "state": "Running",
+  "suspendedTill": null,
+  "tags": null,
+  "targetSwapSlot": null,
+  "trafficManagerHostNames": null,
+  "type": "Microsoft.Web/sites",
+  "usageState": "Normal"
+}
+```
+Now the app is deployed. Head over to [http://yourdockerhubname-sfft.azurewebsites.net](#) and take a look:
+
+<img src="images/app-error.jpg" alt="Application error." />
+
+Whoops! Look like something went wrong. Going back the Azure portal, we can browse to:
+
+ Home -> App Services -> yourdockerhubname-sfft -> Container Settings
+
+ Here we se an error in the log:
+ ```
+ 2020-04-20 00:34:36.672 ERROR - Exception in multi-container config parsing: (Line: 20, Col: 9, Idx: 402) - (Line: 20, Col: 35, Idx: 428): Bind mount must start with ${WEBAPP_STORAGE_HOME}.
+2020-04-20 00:34:36.672 ERROR - Start multi-container app failed
+2020-04-20 00:34:36.744 INFO  - Stoping site adaptiman-sfft because it failed during startup.
+ ```
+ Hmm, "bind mount must start with ${WEBAPP_STORAGE_HOME}." The reason we're getting this error is because our data storage location is inside our containers. App Service doesn't like this and wants us to create persistent storage. To do this, we have to configure our web app to bind to persistent storage, create the persistent storage, then redeploy the containers.
+
+ First, we'll configure our web app to bind to persistent storage:
+ ```
+ $ az webapp config appsettings set --resource-group foodtrucksRG \
+    --name adaptiman-sfft \
+    --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+ ```
+ Azure will return:
+ ```JSON
+ [
+  {
+    "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+    "slotSetting": false,
+    "value": "TRUE"
+  }
+]
+ ```
+ Next, we need to modify our `docker-compose.yml` file file to reference the persistent storage. We'll change line 20 of the file to look like this:
+ ```
+       - ${WEBAPP_STORAGE_HOME}./flask-app:/opt/flask-app
+ ```
+Lastly, we'll update the container configuration to connect to the new persistent storage:
+```
+az webapp config container set --resource-group foodtrucksRG \
+	--name adaptiman-sfft --multicontainer-config-type \
+	compose --multicontainer-config-file docker-compose.yml
+```
+Azure returns a JSON result:
+```JSON
+[
+  {
+    "name": "WEBSITES_ENABLE_APP_SERVICE_STORAGE",
+    "slotSetting": false,
+    "value": "TRUE"
+  },
+  {
+    "name": "DOCKER_CUSTOM_IMAGE_NAME",
+    "value": "COMPOSE|dmVyc2lvbjogIjMiCnNlcnZpY2VzOgogIGVzOgogICAgaW1hZ2U6IGRvY2tlci5lbGFzdGljLmNvL2VsYXN0aWNzZWFyY2gvZWxhc3RpY3NlYXJjaDo2LjMuMgogICAgY29udGFpbmVyX25hbWU6IGVzCiAgICBlbnZpcm9ubWVudDoKICAgICAgLSBkaXNjb3ZlcnkudHlwZT1zaW5nbGUtbm9kZQogICAgcG9ydHM6CiAgICAgIC0gOTIwMDo5MjAwCiAgICB2b2x1bWVzOgogICAgICAtIGVzZGF0YTE6L3Vzci9zaGFyZS9lbGFzdGljc2VhcmNoL2RhdGEKICB3ZWI6CiAgICBpbWFnZTogYWRhcHRpbWFuL2Zvb2R0cnVja3Mtd2ViCiAgICBjb21tYW5kOiBweXRob24gYXBwLnB5CiAgICBkZXBlbmRzX29uOgogICAgICAtIGVzCiAgICBwb3J0czoKICAgICAgLSA1MDAwOjUwMDAKICAgIHZvbHVtZXM6CiAgICAgIC0gJHtXRUJBUFBfU1RPUkFHRV9IT01FfS4vZmxhc2stYXBwOi9vcHQvZmxhc2stYXBwCnZvbHVtZXM6CiAgICBlc2RhdGExOgogICAgICBkcml2ZXI6IGxvY2FsCg=="
+  }
+]
+```
+The build sequence can take 5-10 minutes, depending on the resource of your app service container. Take another look at http://yourdockerhubname-sfft.azurewebsites.net:
+
+
+
+
+
+
+
 
 The next step is to configure the CLI.
 ```
