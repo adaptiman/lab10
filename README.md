@@ -42,7 +42,7 @@ This lab is built upon the Virtual Machine (VM) you built in [Lab9](https://gith
 - [Azure Web Services](http://azure.microsoft.com/en-us/)
 - [Docker Hub](https://hub.docker.com/)
 
-To prepare for the lab, SSH into your VM from lab 9, and clone Lab10 in your home directory:
+To prepare for the lab, SSH into your VM from Lab 9, and clone Lab 10 in your home directory:
 ```
 $ git clone https://github.com/adaptiman/lab10.git
 ```
@@ -104,10 +104,7 @@ $
 ```
 Quite unsurprisingly, there exists an officially supported [image](https://hub.docker.com/_/elasticsearch/) for Elasticsearch. To get ES running, we can simply use `docker run` and have a single-node ES container running locally within no time. Note that currently, there are issues with the Docker elasticsearch image, and so we'll use the published image from the creator (referencing a known working version):
 ```
-$ docker run -d --name es \
-    -p 9200:9200 -p 9300:9300 \
-    -e "discovery.type=single-node" \
-    docker.elastic.co/elasticsearch/elasticsearch:6.3.2
+$ docker run -d --name es -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:6.3.2
 ...
 224a97d6bc54829f8be84b48d230f06ff316d07da150c1a4df4e74baeceeb5a3
 
@@ -173,7 +170,7 @@ We then use the `ADD` command to copy our application into a new volume in the c
 
 Finally, we can go ahead, build the image and run the container (replace `adaptiman` with your username below).
 ```
-$ cd ~/Lab10/
+$ cd ~/lab10/
 $ docker build -t adaptiman/foodtrucks-web .
 Sending build context to Docker daemon  14.53MB
 Step 1/12 : FROM ubuntu:latest
@@ -206,7 +203,7 @@ Successfully tagged adaptiman/foodtrucks-web:latest
 
 $
 ```
-Hmm. Looks like the build process found some vulnerabilities in Step 8. `We'll come back to these later`.
+Hmm. Looks like the build process found some vulnerabilities in Step 8. [We'll come back to these later](#patching).
 
 As this is the first build, it will take some time as the Docker client will download the ubuntu image, run all the commands and prepare your image. Re-running `docker build` after any subsequent changes you make to the application code will almost be instantaneous. Now let's try running our app.
 ```
@@ -223,15 +220,17 @@ Oops! Our flask app was unable to run since it was unable to connect to Elastics
 ### 4.2 Docker Network
 Before we talk about the features Docker provides especially to deal with such scenarios, let's see if we can figure out a way to get around the problem. Hopefully this should give you an appreciation for the specific feature that we are going to study.
 
-Okay, so let's run `docker ps` and see what we have.
+Okay, so let's run `docker ps -a` and see what we have.
 ```
-$ docker ps
-CONTAINER ID        IMAGE                                                 COMMAND                  CREATED             STATUS              PORTS                                            NAMES
-862d697afd0f        docker.elastic.co/elasticsearch/elasticsearch:6.3.2   "/usr/local/bin/dock…"   14 minutes ago      Up 13 minutes       0.0.0.0:9200->9200/tcp, 0.0.0.0:9300->9300/tcp   es
+$ docker ps -a
+CONTAINER ID        IMAGE                                                 COMMAND                  CREATED             STATUS                     PORTS                                            NAMES
+5409ac5c0ac1        adaptiman/foodtrucks-web                              "python ./app.py"        3 minutes ago       Exited (1) 2 minutes ago                                                    festive_lamarr
+978dd333c12a        docker.elastic.co/elasticsearch/elasticsearch:6.3.2   "/usr/local/bin/dock…"   18 minutes ago      Up 17 minutes              0.0.0.0:9200->9200/tcp, 0.0.0.0:9300->9300/tcp   es
+adaptiman@DavidsDockerv4:~/lab10$
 
 $
 ```
-So we have one ES container running on `0.0.0.0:9200` port which we can directly access. If we can tell our Flask app to connect to this URL, it should be able to connect and talk to ES, right? Let's dig into our [Python code](flask-app/app.py#L8) and see how the connection details are defined.
+So we have an `adaptiman/foodtrucks-web` container that is stopped. We also have one ES container running on `0.0.0.0:9200` port which we can directly access. If we can tell our Flask app to connect to this URL, it should be able to connect and talk to ES, right? Let's dig into our [Python code](flask-app/app.py#L8) and see how the connection details are defined.
 ```
 es = Elasticsearch(host='es')
 ```
@@ -306,7 +305,7 @@ You can see that our container `862d697a` is listed under the `Containers` secti
 ```javascript
 $ docker run -it --rm adaptiman/foodtrucks-web bash
 
-root@ef6a158f1441:/opt/flask-app# curl 172.17.0.2:9200
+/opt/flask-app# curl 172.17.0.2:9200
 {
   "name" : "i8XWXyN",
   "cluster_name" : "docker-cluster",
@@ -355,7 +354,7 @@ $
 ```
 The `network create` command creates a new *bridge* network, which is what we need at the moment. There are other kinds of networks that you can create, and you are encouraged to read about them in the official [docs](https://docs.docker.com/engine/userguide/networking/dockernetworks/).
 
-Now that we have a network, we can launch our containers inside this network using the `--net` flag. Let's do that - but first, we will stop our ES container that is running in the bridge (default) network.
+Now that we have a network, we can launch our containers inside this network using the `--net` flag. Let's do that - but first, we will stop our ES container that is running in the bridge (default) network. NOTE: You'll have to substitute your own container ID to make this work:
 
 ```javascript
 $ docker ps -a
@@ -369,9 +368,7 @@ $ docker rm 862d697afd0f
 862d697afd0f
 
 
-$ docker run -d --name es --net foodtrucks-net \
-	-p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" \
-	docker.elastic.co/elasticsearch/elasticsearch:6.3.2
+$ docker run -d --name es --net foodtrucks-net -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:6.3.2
 9566656a6aaa47568ed9afd7faf84824e07f1a35250d561ee21ba77ac1eef6a1
 
 $ docker network inspect foodtrucks-net
@@ -419,10 +416,9 @@ $
 We've done the same thing as earlier but this time we gave our ES container a name `es`. Now before we try to run our flask container, let's inspect what happens when we launch in a network.
 
 ```javascript
-$ docker run -it --rm --net foodtrucks-net \
-    adaptiman/foodtrucks-web bash
+$ docker run -it --rm --net foodtrucks-net  adaptiman/foodtrucks-web bash
 
-root@5f511775e302:/opt/flask-app# cat /etc/hosts
+/opt/flask-app# cat /etc/hosts
 127.0.0.1       localhost
 ::1     localhost ip6-localhost ip6-loopback
 fe00::0 ip6-localnet
@@ -431,7 +427,7 @@ ff02::1 ip6-allnodes
 ff02::2 ip6-allrouters
 172.20.0.3      5f511775e302
 
-root@5f511775e302:/opt/flask-app# curl es:9200
+/opt/flask-app# curl es:9200
 {
   "name" : "jvvFbGe",
   "cluster_name" : "docker-cluster",
@@ -450,10 +446,10 @@ root@5f511775e302:/opt/flask-app# curl es:9200
   "tagline" : "You Know, for Search"
 }
 
-root@5f511775e302:/opt/flask-app# ls
+/opt/flask-app# ls
 app.py  node_modules  package-lock.json  package.json  requirements.txt  static  templates  webpack.config.js
 
-root@5f511775e302:/opt/flask-app# python app.py
+/opt/flask-app# python app.py
 Index not found...
 Loading data in elasticsearch ...
 Total trucks loaded:  655
@@ -464,7 +460,7 @@ Total trucks loaded:  655
  * Debug mode: off
  * Running on http://0.0.0.0:5000/ (Press CTRL+C to quit)
 
-root@5f511775e302:/opt/flask-app# exit
+/opt/flask-app# exit
 exit
 
 $
@@ -472,8 +468,7 @@ $
 
 Wohoo! That works! Magically Docker made the correct host file entry in `/etc/hosts` which means that `es:9200` correctly resolves to the IP address of the ES container. Great! Let's launch our Flask container for real now:
 ```javascript
-$ docker run -d --net foodtrucks-net -p 5000:5000 \
->   --name foodtrucks-web adaptiman/foodtrucks-web
+$ docker run -d --net foodtrucks-net -p 5000:5000 --name foodtrucks-web adaptiman/foodtrucks-web
 2c6f251a1ac352def8266944183be9d03fd2bb228dd48c213f7d72720abb90fd
 
 $ docker ps
@@ -491,22 +486,8 @@ Date: Sun, 19 Apr 2020 04:25:13 GMT
 $
 ```
 
-Head over to http://\<yourdockerdevmachineIP\>:5000 and see your glorious app live! Although that might have seemed like a lot of work, we actually just typed 4 commands to go from zero to running. I've collated the commands in a [bash script](setup-docker.sh).
-```
-#!/bin/bash
+Head over to `http://<yourdockerdevmachine>:5000` and see your glorious app live! BTW - You may need to open port 5000 on your VM.
 
-# build the flask container
-docker build -t adaptiman/foodtrucks-web .
-
-# create the network
-docker network create foodtrucks-net
-
-# start the ES container
-docker run -d --name es --net foodtrucks-net -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" docker.elastic.co/elasticsearch/elasticsearch:6.3.2
-
-# start the flask app container
-docker run -d --net foodtrucks-net -p 5000:5000 --name foodtrucks-web adaptiman/foodtrucks-web
-```
 <a id="patching"></a>
 #### 4.2.1 Patching a Docker Container
 
@@ -518,7 +499,7 @@ found 2 low severity vulnerabilities
   run `npm audit fix` to fix them, or `npm audit` for details
 ...
 ```
-This message indicates that one or more of our packages may have a security vulnerability. Note the message to run `npm audit fix` to fix them, or `npm audit` for details. Let's re-enter our running container and see if we can fix this issue:
+This message indicates that one or more of our packages may have a security vulnerability. Note the message to run `npm audit fix` to fix them, or `npm audit` for details. Let's re-enter our running container and see if we can fix this issue. NOTE: You'll have to use your specific Container ID:
 
 ```
 $ docker ps
@@ -526,7 +507,7 @@ CONTAINER ID        IMAGE                                                 COMMAN
 9de276789070        adaptiman/foodtrucks-web                              "python ./app.py"        About a minute ago   Up About a minute   0.0.0.0:5000->5000/tcp                           foodtrucks-web
 c23582893d29        docker.elastic.co/elasticsearch/elasticsearch:6.3.2   "/usr/local/bin/dock…"   About a minute ago   Up About a minute   0.0.0.0:9200->9200/tcp, 0.0.0.0:9300->9300/tcp   es
 
-$ docker exec -ti foodtrucks-web /bin/bash
+$ docker exec -ti 9de276789070 /bin/bash
 /opt/flask-app# npm audit
                        === npm audit security report ===
 # Run  npm install --save-dev webpack@4.42.1  to resolve 1 vulnerability
@@ -556,7 +537,9 @@ exit
 
 $
 ```
-There's a lot here. Let's take it step by step. First, we verified that both our foodtrucks-web and ES containers are running. Then we entered our running container using the ```docker exec -ti foodtrucks-web /bin/bash``` command. You'll notice that our prompt changed from a ```$``` to a ```/opt/flask-app#```. This signifies that we have left the VM and entered the container.
+There's a lot here. Let's take it step by step. First, we verified that both our foodtrucks-web and ES containers are running. Then we entered our running container using the ```docker exec -ti 9de276789070 /bin/bash``` command. Take care to use the Container ID and NOT the image name, otherwise, you'll be patching a different container. 
+
+You'll notice that our prompt changed from a ```$``` to a ```/opt/flask-app#```. This signifies that we have left the VM and entered the container.
 
 Once inside the container, we run ```npm audit``` and verify that there are, indeed, two vulnerabilities. It's nice that the node package manager (npm) tells us how to fix this by running the command ``npm install --save-dev webpack@4.42.1``. After the patches are complete, we again run ```npm audit`` and then see that we have a clean bill of health. 
 
@@ -576,7 +559,7 @@ So let's do that. First, we'll add the patching command to our ``Dockerfile``. F
 RUN npm install --save-dev webpack@4.42.1
 ...
 ```
-Next, we will stop and remove the original foodtrucks-web image, rebuild it with our updated Dockerfile, then redeploy it in the application:
+Next, we will stop and remove the original foodtrucks-web image, rebuild it with our updated Dockerfile, then redeploy it in the application. You'll notice that this build goes a lot faster since the images are already downloaded:
 
 ```
 $ docker ps -a
@@ -596,9 +579,7 @@ Step 11/13 : RUN npm install --save-dev webpack@4.42.1
 Successfully built 316cd9664b96
 Successfully tagged adaptiman/foodtrucks-web:latest
 
-$ docker run -d --net foodtrucks-net \
-    -p 5000:5000 --name foodtrucks-web \
-    adaptiman/foodtrucks-web
+$ docker run -d --net foodtrucks-net -p 5000:5000 --name foodtrucks-web adaptiman/foodtrucks-web
 f0c8e543a3d56978a90e9118433d64744392aba6bb81fad6856229b2b217e082
 
 $
@@ -660,20 +641,18 @@ So what is *Compose* used for? Compose is a tool that is used for defining and r
 
 Let's see if we can create a `docker-compose.yml` file for our SF-Foodtrucks app and evaluate whether Docker Compose lives up to its promise.
 
-The first step, however, is to install Docker Compose in our VM.  Since Compose is written in Python, you can install it easily with pip:
+The first step, however, is to install Docker Compose in our VM:
 ```
-$ pip install docker-compose
+$ sudo apt -yq install docker-compose
 ...
 
 $
 ```
-Linux users can easily get their hands on Docker Compose by following the [instructions](https://docs.docker.com/compose/install/) on the docs. If you're running Windows or Mac, Docker Compose is already installed as it comes in the Docker Toolbox. 
-
 Test your installation with:
 ```
 $ docker-compose version
-docker-compose version 1.25.5, build unknown
-docker-py version: 4.2.0
+docker-compose version 1.17.1, build unknown
+docker-py version: 2.5.1
 CPython version: 2.7.17
 OpenSSL version: OpenSSL 1.1.1  11 Sep 2018
 
@@ -982,8 +961,7 @@ The command will return a JSON payload with the result:
 ```
 Next, you'll creat an Azure app service plan to hold the containers. The service plan is named foodtrucksServicePlan in the Standard pricing tier (--sku S1) and in a Linux container (--is-linux). Again, this is a quite simple:
 ```
-$ az appservice plan create --name foodtrucksServicePlan \
-    --resource-group foodtrucksRG --sku P1v2 --is-linux
+$ az appservice plan create --name foodtrucksServicePlan   --resource-group foodtrucksRG --sku P1v2 --is-linux
 ```
 When the App Service plan has been created, you'll see a JSON result similar to the following:
 ```JSON
@@ -1027,10 +1005,7 @@ When the App Service plan has been created, you'll see a JSON result similar to 
 ```
 Finally, you'll deploy your application using the docker-compose .yml file with a single command:
 ```
-az webapp create --resource-group foodtrucksRG --plan \
-    foodtrucksServicePlan --name adaptiman-sfft \
-    --multicontainer-config-type compose \
-    --multicontainer-config-file docker-compose.yml
+az webapp create --resource-group foodtrucksRG --plan foodtrucksServicePlan --name adaptiman-sfft --multicontainer-config-type compose --multicontainer-config-file docker-compose.yml
 ```
 When the app has been deployed, you'll see a JSON result similar to the following. Note the default host name:
 ```JSON
@@ -1127,9 +1102,7 @@ Whoops! Look like something went wrong. Going back the Azure portal, we can brow
 
  First, we'll configure our web app to bind to persistent storage:
  ```
- $ az webapp config appsettings set --resource-group foodtrucksRG \
-    --name adaptiman-sfft \
-    --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
+ $ az webapp config appsettings set --resource-group foodtrucksRG --name adaptiman-sfft --settings WEBSITES_ENABLE_APP_SERVICE_STORAGE=TRUE
  ```
  Azure will return:
  ```JSON
@@ -1143,13 +1116,11 @@ Whoops! Look like something went wrong. Going back the Azure portal, we can brow
  ```
  Next, we need to modify our `docker-compose.yml` file file to reference the persistent storage. We'll change line 20 of the file to look like this:
  ```
-       - ${WEBAPP_STORAGE_HOME}./flask-app:/opt/flask-app
+       - ${WEBAPP_STORAGE_HOME}/opt/flask-app
  ```
 Lastly, we'll update the container configuration to connect to the new persistent storage:
 ```
-az webapp config container set --resource-group foodtrucksRG \
-	--name adaptiman-sfft --multicontainer-config-type \
-	compose --multicontainer-config-file docker-compose.yml
+az webapp config container set --resource-group foodtrucksRG--name adaptiman-sfft --multicontainer-config-typecompose --multicontainer-config-file docker-compose.yml
 ```
 Azure returns a JSON result:
 ```JSON

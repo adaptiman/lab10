@@ -17,7 +17,10 @@ services:
     ports:
       - 5000:5000
     volumes:
+      # local docker-compose option
       - ./flask-app:/opt/flask-app
+      # Azure docker-compose option with persistent storage
+      #- ${WEBAPP_STORAGE_HOME}/opt/flask-app
 volumes:
     esdata1:
       driver: local
