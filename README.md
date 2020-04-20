@@ -691,11 +691,18 @@ Via other parameters such as `command` and `ports` we provide more information a
 
 > Note: You must be inside the directory with the `docker-compose.yml` file in order to execute most Compose commands.
 
-Great! Now the file is ready, let's see `docker-compose` in action. But before we start, we need to make sure the ports are free. So if you have the Flask and ES containers running, lets turn them off.
+Great! Now the file is ready, let's see `docker-compose` in action. But before we start, we need to make sure the ports are free. So if you have the Flask and ES containers running, lets turn them off and remove them.
 ```
-$ docker stop $(docker ps -aq)
-39a2f5df14ef
-2a1b77e066e6
+$ docker ps -a
+CONTAINER ID        IMAGE                                                 COMMAND                  CREATED             STATUS              PORTS                                            NAMES
+063cbeadce52        adaptiman/foodtrucks-web                              "python ./app.py"        57 seconds ago      Up 55 seconds       0.0.0.0:5000->5000/tcp                           foodtrucks-web
+2c04a5c42b56        docker.elastic.co/elasticsearch/elasticsearch:6.3.2   "/usr/local/bin/dock…"   16 minutes ago      Up 16 minutes       0.0.0.0:9200->9200/tcp, 0.0.0.0:9300->9300/tcp   es
+
+$ docker rm -f 063cbeadce52 2c04a5c42b56
+063cbeadce52
+2c04a5c42b56
+
+$
 ```
 
 Now we can run `docker-compose`. Navigate to the food trucks directory and run `docker-compose up`.
@@ -770,6 +777,17 @@ NETWORK ID          NAME                DRIVER              SCOPE
 b99d35bfea36        bridge              bridge              local
 355c7d82d889        host                host                local
 f72c355d1b96        none                null                local
+```
+We'll also remove the current containers:
+```
+$ docker ps -a
+CONTAINER ID        IMAGE                                                 COMMAND                  CREATED             STATUS                       PORTS               NAMES
+d5f968e1dd9f        adaptiman/foodtrucks-web                              "python app.py"          5 minutes ago       Exited (137) 2 minutes ago                       lab10_web_1
+3aa47a834936        docker.elastic.co/elasticsearch/elasticsearch:6.3.2   "/usr/local/bin/dock…"   5 minutes ago       Exited (143) 2 minutes ago                       es
+
+$ docker rm -f d5f968e1dd9f 3aa47a834936
+d5f968e1dd9f
+3aa47a834936
 
 $
 ```
@@ -825,7 +843,7 @@ ff02::2 ip6-allrouters
 Whoops! It turns out that this file has no idea what the `es` network. So how is our app working? Let's see if can ping this hostname -
 
 ```
-/opt/flask-app# apt install iputils-ping
+/opt/flask-app# apt -yq install iputils-ping
 Reading package lists... Done
 Building dependency tree
 ...
@@ -844,7 +862,9 @@ PING es (172.25.0.2) 56(84) bytes of data.
 
 Voila! That works. So somehow, this container is magically able to ping `es` hostname.  It turns out that in Docker 1.10 a new networking system was added that does service discovery using a DNS server. If you're interested, you can read more about the [proposal](https://github.com/docker/libnetwork/issues/767) and [release notes](https://blog.docker.com/2016/02/docker-1-10/).
 
-That concludes our tour of Docker Compose. With Docker Compose, you can also pause your services, run a one-off command on a container and even scale the number of containers. I also recommend you checkout a few other [use-cases](https://docs.docker.com/compose/overview/#common-use-cases) of Docker compose. Hopefully I was able to show you how easy it is to manage multi-container environments with Compose. In the final section, we are going to deploy our app to AWS!
+That concludes our tour of Docker Compose. With Docker Compose, you can also pause your services, run a one-off command on a container and even scale the number of containers. I also recommend you checkout a few other [use-cases](https://docs.docker.com/compose/overview/#common-use-cases) of Docker compose. Hopefully I was able to show you how easy it is to manage multi-container environments with Compose. In the final section, we are going to deploy our app to Azure!
+
+#STOP HERE FOR LAB 10++++=====================================================
 
 <a href="#table-of-contents" class="top" id="preface">Top</a>
 <a id="azure-webapp"></a>
@@ -1139,101 +1159,6 @@ Azure returns a JSON result:
 The build sequence can take 5-10 minutes, depending on the resource of your app service container. Take another look at http://yourdockerhubname-sfft.azurewebsites.net:
 
 
-
-
-
-
-
-
-The next step is to configure the CLI.
-```
-$ ecs-cli configure --region us-east-1 --cluster foodtrucks
-INFO[0000] Saved ECS CLI configuration for cluster (foodtrucks)
-```
-We provide the `configure` command with the region name we want our cluster to reside in and a cluster name. Make sure you provide the **same region name** that you used when creating the keypair. If you've not configured the [AWS CLI](https://aws.amazon.com/cli/) on your computer before, you can use the official [guide](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-set-up.html), which explains everything in great detail on how to get everything going.
-
-The next step enables the CLI to create a [CloudFormation](https://aws.amazon.com/cloudformation/) template.
-```
-$ ecs-cli up --keypair ecs --capability-iam --size 2 --instance-type t2.micro
-INFO[0000] Created cluster                               cluster=foodtrucks
-INFO[0001] Waiting for your cluster resources to be created
-INFO[0001] Cloudformation stack status                   stackStatus=CREATE_IN_PROGRESS
-INFO[0061] Cloudformation stack status                   stackStatus=CREATE_IN_PROGRESS
-INFO[0122] Cloudformation stack status                   stackStatus=CREATE_IN_PROGRESS
-INFO[0182] Cloudformation stack status                   stackStatus=CREATE_IN_PROGRESS
-INFO[0242] Cloudformation stack status                   stackStatus=CREATE_IN_PROGRESS
-```
-Here we provide the name of the keypair we downloaded initially (`ecs` in my case), the number of instances that we want to use (`--size`) and the type of instances that we want the containers to run on. The `--capability-iam` flag tells the CLI that we acknowledge that this command may create IAM resources.
-
-The last and final step is where we'll use our `docker-compose.yml` file. We'll need to make a tiny change, so instead of modifying the original, let's make a copy of it and call it `aws-compose.yml`. The contents of [this file](aws-compose.yml) (after making the changes) look like (below) -
-```
-es:
-  image: elasticsearch
-  cpu_shares: 100
-  mem_limit: 262144000
-web:
-  image: adaptiman/foodtrucks-web
-  cpu_shares: 100
-  mem_limit: 262144000
-  ports:
-    - "80:5000"
-  links:
-    - es
-```
-The only changes we made from the original `docker-compose.yml` are of providing the `mem_limit` and `cpu_shares` values for each container. We also got rid of the `version` and the `services` key, since AWS doesn't yet support [version 2](https://docs.docker.com/compose/compose-file/#version-2) of Compose file format. Since our apps will run on `t2.micro` instances, we allocate 250mb of memory. Another thing we need to do before we move onto the next step is to publish our image on Docker Hub. As of this writing, ecs-cli **does not** support the `build` command - which is [supported](https://docs.docker.com/compose/compose-file/#build) perfectly by Docker Compose.
-
-```
-$ docker push adaptiman/foodtrucks-web
-```
-
-Great! Now let's run the final command that will deploy our app on ECS!
-
-```
-$ ecs-cli compose --file aws-compose.yml up
-INFO[0000] Using ECS task definition                     TaskDefinition=ecscompose-foodtrucks:2
-INFO[0000] Starting container...                         container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/es
-INFO[0000] Starting container...                         container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/web
-INFO[0000] Describe ECS container status                 container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/web desiredStatus=RUNNING lastStatus=PENDING taskDefinition=ecscompose-foodtrucks:2
-INFO[0000] Describe ECS container status                 container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/es desiredStatus=RUNNING lastStatus=PENDING taskDefinition=ecscompose-foodtrucks:2
-INFO[0036] Describe ECS container status                 container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/es desiredStatus=RUNNING lastStatus=PENDING taskDefinition=ecscompose-foodtrucks:2
-INFO[0048] Describe ECS container status                 container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/web desiredStatus=RUNNING lastStatus=PENDING taskDefinition=ecscompose-foodtrucks:2
-INFO[0048] Describe ECS container status                 container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/es desiredStatus=RUNNING lastStatus=PENDING taskDefinition=ecscompose-foodtrucks:2
-INFO[0060] Started container...                          container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/web desiredStatus=RUNNING lastStatus=RUNNING taskDefinition=ecscompose-foodtrucks:2
-INFO[0060] Started container...                          container=845e2368-170d-44a7-bf9f-84c7fcd9ae29/es desiredStatus=RUNNING lastStatus=RUNNING taskDefinition=ecscompose-foodtrucks:2
-```
-It's not a coincidence that the invocation above looks similar to the one we used with **Docker Compose**. The `--file` argument is used to override the default file (`docker-compose.yml`) that the CLI will read. If everything went well, you should see a `desiredStatus=RUNNING lastStatus=RUNNING` as the last line.
-
-Awesome! Our app is live, but how can we access it?
-```
-ecs-cli ps
-Name                                      State    Ports                     TaskDefinition
-845e2368-170d-44a7-bf9f-84c7fcd9ae29/web  RUNNING  54.86.14.14:80->5000/tcp  ecscompose-foodtrucks:2
-845e2368-170d-44a7-bf9f-84c7fcd9ae29/es   RUNNING                            ecscompose-foodtrucks:2
-```
-Go ahead and open [http://54.86.14.14](http://54.86.14.14) in your browser and you should see the Food Trucks in all its black-yellow glory!
-Since we're on the topic, let's see how our [AWS ECS](https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters) console looks.
-
-<img src="images/cluster.png" alt="ECS cluster" />
-<img src="images/tasks.png" alt="ECS cluster" />
-
-We can see above that our ECS cluster called 'foodtrucks' was created and is now running 1 task with 2 container instances. Spend some time browsing this console to get a hang of all the options that are here.
-
-So there you have it. With just a few commands we were able to deploy our awesome app on the AWS cloud!
-___________
-
-<a href="#table-of-contents" class="top" id="preface">Top</a>
-<a id="wrap-up"></a>
-## 4.0 Wrap Up
-And that's a wrap! After a long, exhaustive but fun tutorial you are now ready to take the container world by storm! If you followed along till the very end then you should definitely be proud of yourself. You learnt how to setup Docker, run your own containers, play with static and dynamic websites and most importantly got hands on experience with deploying your applications to the cloud!
-
-I hope that finishing this tutorial makes you more confident in your abilities to deal with servers. When you have an idea of building your next app, you can be sure that you'll be able to get it in front of people with minimal effort.
-
-<a id="next-steps"></a>
-### 4.1 Next Steps
-Your journey into the container world has just started! My goal with this tutorial was to whet your appetite and show you the power of Docker. In the sea of new technology, it can be hard to navigate the waters alone and tutorials such as this one can provide a helping hand. This is the Docker tutorial I wish I had when I was starting out. Hopefully it served its purpose of getting you excited about containers so that you no longer have to watch the action from the sides.
-
-Below are a few additional resources that will be beneficial. For your next project, I strongly encourage you to use Docker. Keep in mind - practice makes perfect!
-
 **Additional Resources**
 
 - [Awesome Docker](https://github.com/veggiemonk/awesome-docker)
@@ -1267,7 +1192,7 @@ ___________
 
 <a href="#table-of-contents" class="top" id="preface">Top</a>
 <a id="submitlab"></a>
-## 5.0 Submitting the Lab
+## 5.0 Submitting the Lab-DRAFT DO NOT COMPLETE YET
 
 In order to submit, the lab, you should complete all of the steps listed in this document. Then, on your Docker Development VM, run the vm_report program filling in the required information:
 ```
