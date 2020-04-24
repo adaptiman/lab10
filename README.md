@@ -871,7 +871,7 @@ That concludes our tour of Docker Compose. With Docker Compose, you can also pau
 ### 4.4 Azure Web App Service
 In the last section we used `docker-compose` to run our app locally with a single command: `docker-compose up`. Now that we have a functioning app we want to share this with the world, get some users, make tons of money and buy a big house in Miami. Executing the last three are beyond the scope of tutorial, so we'll spend our time instead on figuring out how we can deploy our multi-container apps on the cloud with Azure.
 
-If you've read this far you are much pretty convinced that Docker is a pretty cool technology. And you are not alone. Seeing the meteoric rise of Docker, almost all Cloud vendors started working on adding support for deploying Docker apps on their platform. As of today, you can deploy Docker apps on AWS, [Azure](https://docs.microsoft.com/en-us/azure/app-service/containers/quickstart-multi-container), [Rackspace](http://blog.rackspace.com/docker-with-the-rackspace-open-cloud/), [DigitalOcean](https://marketplace.digitalocean.com/apps/docker) and many others. We already got a primer on deploying single container app with Azure App Service in Lab9. In this section we are going to look at [Azure Web App for Containers](https://docs.microsoft.com/en-us/azure/app-service/containers/tutorial-multi-container-app)..
+If you've read this far you are much pretty convinced that Docker is a pretty cool technology. And you are not alone. Seeing the meteoric rise of Docker, almost all Cloud vendors started working on adding support for deploying Docker apps on their platform. As of today, you can deploy Docker apps on AWS, [Azure](https://docs.microsoft.com/en-us/azure/app-service/containers/quickstart-multi-container), [Rackspace](http://blog.rackspace.com/docker-with-the-rackspace-open-cloud/), [DigitalOcean](https://marketplace.digitalocean.com/apps/docker) and many others. We already got a primer on deploying single container app with Azure App Service in Lab9. In this section we are going to look at [Azure Web App for Containers](https://docs.microsoft.com/en-us/azure/app-service/containers/tutorial-multi-container-app).
 
 Azure Web App is a scalable and super flexible container management service that supports Docker containers. It allows you to operate a Docker cluster either through the Azure portal GUI or via the Azure CLI.
 
@@ -881,7 +881,7 @@ Azure Web App is a scalable and super flexible container management service that
 
 Luckily for us, Azure has a friendly [CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest) tool that can be installed using apt, understands Docker Compose files, and automatically provisions the cluster on Azure Web App. Since we already have a functioning `docker-compose.yml` it should not take a lot of effort in getting up and running on Azure. So let's get started!
 
-The first step is to install the CLI.  Instructions to install the CLI are explained very clearly in the [official doc](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-apt?view=azure-cli-latest). But for Ubuntu, the Azure CLI can be installed with one command:
+You probably already have Azure CLI installed on your VM if you completed Lab 9. If not, the Azure CLI can be installed with one command:
 ```
 $ curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
 ```
@@ -1025,7 +1025,7 @@ When the App Service plan has been created, you'll see a JSON result similar to 
 ```
 Finally, you'll deploy your application using the docker-compose .yml file with a single command:
 ```
-az webapp create --resource-group foodtrucksRG --plan foodtrucksServicePlan --name adaptiman-sfft --multicontainer-config-type compose --multicontainer-config-file docker-compose.yml
+$ az webapp create --resource-group foodtrucksRG --plan foodtrucksServicePlan --name adaptiman-sfft --multicontainer-config-type compose --multicontainer-config-file docker-compose.yml
 ```
 When the app has been deployed, you'll see a JSON result similar to the following. Note the default host name:
 ```JSON
@@ -1104,7 +1104,7 @@ When the app has been deployed, you'll see a JSON result similar to the followin
   "usageState": "Normal"
 }
 ```
-Now the app is deployed. Head over to [http://yourdockerhubname-sfft.azurewebsites.net](#) and take a look:
+Now the app is deployed. Head over to [http://yourdockerhubname-sfft.azurewebsites.net](http://yourdockerhubname-sfft.azurewebsites.net) and take a look:
 
 <img src="images/app-error.jpg" alt="Application error." />
 
