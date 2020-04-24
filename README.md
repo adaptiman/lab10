@@ -2,8 +2,8 @@
 <img src="images/logo.png" alt="docker logo">
 
 *Learn to build and deploy your distributed applications easily to the cloud with Docker*
-## Orchestration and Kubernetes
-This tutorial was originally written and developed by [Prakhar Srivastav](http://prakhar.me) and modified by [David Sweeney](https://adaptiman.github.io) for TCMG303 to include how to setup an Azure Kubernetes cluster to support a multi-container application. In this lab, you will build and deploy an application consisting of multiple containers with a Docker virtual network. After building and testing locally, you will deploy our application to Azure Kubernetes Service.
+## Multi-Container Orchestration
+This tutorial was originally written and developed by [Prakhar Srivastav](http://prakhar.me) and modified by [David Sweeney](https://adaptiman.github.io) for TCMG303 to include how to setup an Azure App Service to support a multi-container application. In this lab, you will build and deploy an application consisting of multiple containers with a Docker virtual network. After building and testing locally, you will deploy our application to Azure App Service.
 
 <a href="#top" class="top" id="getting-started">Top</a>
 
