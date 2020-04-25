@@ -10,5 +10,4 @@ sudo apt -yq update
 sudo apt -yq install docker-ce docker-ce-cli containerd.io
 apt-cache madison docker-ce
 sudo apt -yq install docker-ce=5:19.03.8~3-0~ubuntu-bionic docker-ce-cli=5:19.03.8~3-0~ubuntu-bionic containerd.io
-sudo docker run hello-world
-sudo usermod -aG docker $USER
+sudo usermod -aG docker ${USER}
